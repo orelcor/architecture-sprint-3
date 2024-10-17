@@ -1,0 +1,89 @@
+openapi: 3.0.0
+info:
+  title: Device Management API
+  version: 1.0.0
+  description: API для управления устройствами и командами
+
+paths:
+  /devices:
+    get:
+      summary: Получить список устройств
+      responses:
+        '200':
+          description: Успешно получен список устройств
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Device'
+
+  /devices/{deviceId}:
+    parameters:
+      - name: deviceId
+        in: path
+        required: true
+        description: ID устройства
+        schema:
+          type: string
+
+    get:
+      summary: Получить информацию об устройстве
+      responses:
+        '200':
+          description: Информация об устройстве
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Device'
+
+  /devices/{deviceId}/commands:
+    post:
+      summary: Отправить команду устройству
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Command'
+      responses:
+        '200':
+          description: Команда успешно отправлена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Command'
+
+components:
+  schemas:
+    Device:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "some device"
+        name:
+          type: string
+          example: "Умная лампа"
+        status:
+          type: string
+          enum: [online, offline]
+          example: "online"
+        type:
+          type: string
+          example: "light"
+
+    Command:
+      type: object
+      properties:
+        commandId:
+          type: string
+          example: "some command"
+        action:
+          type: string
+          enum: [turn_on, turn_off, set_brightness]
+          example: "turn_on"
+        parameters:
+          type: object
+          additionalProperties:
+            type: string

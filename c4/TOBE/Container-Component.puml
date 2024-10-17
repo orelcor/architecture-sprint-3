@@ -1,0 +1,102 @@
+@startuml component
+title Диаграмма С4/L2-L3 TOBE 1Y
+
+!include C4_Templates/C4_Component.puml
+
+Person(HouseOwner, "Владелец дома")
+System_Ext(WebApp, "Web/Mobile App", "Входная точка управления умного дома")
+Container(BackendBalancer, "API Gateway", "Kong")
+Rel(HouseOwner, WebApp, "Заходит на сайт/приложение", "HTTPS")
+Rel(WebApp, BackendBalancer, "Запросы пользователей")
+
+Boundary(EcosystemRemoteBackend, "Smart Home Core") {
+    System_Boundary(DeviceManagement, "Управленим устройствами") {
+        Component(HeatingManagement, "Управление отоплением", "Python/FastAPI", "Контроллер управления отоплением")
+        Component(LightManagement, "Управление светом", "Python/FastAPI", "Контроллер управления светом")
+        Component(DoorManagement, "Управление дверьми", "Python/FastAPI", "Контроллер управления воротами и дверьми")
+        Component(WebCamManagement, "Управление камерами", "GO", "Контроллер управления видеонаблюдением")
+        Component(DiscoveryRemoteSync, "Cинхронизация Discovery девайсов", "Python", "В фоне постоянно актуализирует список обнаруженных устройств")
+        ContainerDb(DeviceManagementDB, "БД состояния устройств", "PostgreSQL", "Хранит данные по каждому типу девайсов")
+        ComponentDb(VideoStorageS3, "Объектное хранилище для видеозаписей", "S3","Облачное хранилище для жирного контента")
+        ComponentQueue(DiscoveryKafka, "Очередь для событий об обнаружении девайсов", "Kafka", "События обрабатываются в режиме PULL и актуализируется информация в БД")
+
+        Rel(HeatingManagement, DeviceManagementDB, "Читает/пишет состояния девайсов", "SQL")
+        Rel(LightManagement, DeviceManagementDB, "Читает/пишет состояния девайсов", "SQL")
+        Rel(DoorManagement, DeviceManagementDB, "Читает/пишет состояния девайсов", "SQL")
+        Rel(WebCamManagement, DeviceManagementDB, "Читает/пишет состояния девайсов", "SQL")
+
+        Rel(DiscoveryRemoteSync, DiscoveryKafka, "Читает события Discovery", "TCP/KAFKA")
+        Rel(DiscoveryRemoteSync, DeviceManagementDB, "Обновляет данные о девайсах на основе событий Discovery")
+
+        Rel(WebCamManagement, VideoStorageS3, "Пишет поток видео", "TCP/S3")
+        Rel(WebCamManagement, VideoStorageS3, "Получает ссылку на нужный фрагмент видео", "REST/HTTPS")
+    }
+
+    System_Boundary(UseCaseManagement, "Управленим сценариями") {
+        Component(SimpleUseCaseManagement, "Управление сценарием одного устройства", "Python/FastAPI", "Обрабатывает простые сценарии без связи между девайсами")
+        Component(ComplexUseCaseManagement, "Управление скозным сценарием", "Python/FastAPI", "Сложные сценарии в которых зайдествованы несколько устройств")
+        ContainerDb(UseCaseManagementDB, "БД для хранения сценариев", "Postgres", "Хранит все виды сценариев и статус их исполнения")
+        
+        Rel(SimpleUseCaseManagement, UseCaseManagementDB, "Читает/пишет", "SQL")
+        Rel(ComplexUseCaseManagement, UseCaseManagementDB, "Читает/пшиет", "SQL")
+    }
+
+    System_Boundary(Telemetry, "Телеметрия/Мониторинг") {
+        Component(TemperatureMeasure, "Измерение температуры", "Python/FastAPI", "Фиксирует показания температуры для графиков и проверки сценариев")
+        Component(LightControl, "Контроль света", "Python/FastAPI", "Измерение яркости света, факты включен свет или нет")
+        Component(DoorControl, "Контроль дверей", "Python/FastAPI", "Собирает данные с датчика затвора дверей/ворот")
+        Component(WebCamControl, "Контроль видеокамер", "GO", "Распознает картинку в realtime и собирает факты неработоспособности камер")
+        Component(QueueTelemetryEvents, "Обработка потока событий", "Flink", "Фильтрует потоки событий девайсов из Kafka и укладывает в БД")
+        ContainerDb(TelemetryDB, "БД для телеметрии", "Cassandra", "Сохраняет и отдает на чтение данные для графиков")
+        ComponentQueue(TelemetryKafka, "Очередь для событий телеметрии", "Kafka", "События обрабатываются в режиме PULL контроллерами телеметрии")
+        
+        Rel(QueueTelemetryEvents, TelemetryKafka, "Обрабатывает события по всем видам дейвайсам (PULL)", "TCP/KAFKA")
+        Rel(QueueTelemetryEvents, TelemetryDB, "Записывает события в БД", "CQL")
+
+        Rel(TemperatureMeasure, TelemetryDB,"Читает метрики", "CQL")
+        Rel(LightControl, TelemetryDB,"Читает метрики", "CQL")
+        Rel(DoorControl, TelemetryDB,"Читает метрики", "CQL")
+        Rel(WebCamControl, TelemetryDB,"Читает метрики", "CQL")
+    }
+}
+
+Boundary(LocalNetwork, "Локальная сеть/умный дом") {
+    System_Ext(SmartDevice, "Умное устройство X")
+    System_Ext(SmartMeasure, "Умный датчик X")
+
+    Boundary(DeviceHub, "Единое устройства локальной оркестрации") {
+        System_Boundary(SmartHub, "Device Hub") {
+            Component(DeviceController, "Интерфейс управления устройствами", "Python/FastAPI", "Инкапсулирует низкоуровневые управляющие сигналы")
+            Component(DeviceLayer,"Низкоуровневое управление устройствами", "C", "Отправляет управляющие сигналы устройствам, считывает значения датчиков")
+            Component(TransportComponentHub, "Транспортировка событий", "Python/FastAPI", "Легковесный модуль, который отправляет информацию с датчиков в телеметрию")
+
+            Rel(DeviceController, DeviceLayer, "Передает адаптированный запрос")
+            Rel(DeviceLayer, SmartDevice, "Отправляет команду устройству", "ZegBee")
+            Rel(DeviceLayer, SmartMeasure, "Считывает значение датчика", "ZegBee")
+            Rel(DeviceLayer, TransportComponentHub, "Формирует события для телеметрии")
+        }
+
+        System_Boundary(DeviceDiscovery, "Обнаружение устройств") {
+            Component(DiscoveryComponent, "Обнаружение устройств/датчиков в сети", "C", "Обнаруживает устройства в локальной сети - после подключения их к роутеру")
+            Component(TransportComponentDiscovery, "Транспортировка событий", "Python/FastAPI", "Легковесный модуль, который периодически отправляет обнаруженные устройства в kafka: телеметрии и управления устройствами")
+        }
+    }
+
+    Rel(TransportComponentHub, TelemetryKafka, "Отправляет метрики", "TCP/KAFKA")
+    Rel(TransportComponentDiscovery, TelemetryKafka, "Отправляет метрики", "TCP/KAFKA")
+    Rel(TransportComponentDiscovery, DiscoveryKafka, "Отправляет список обнаруженных устройств", "TCP/KAFKA")
+
+    Rel(UseCaseManagement, DeviceManagement, "Отправляет цепочку команд в соответствующие контроллеры девайсов", "HTTS/REST")
+    Rel(UseCaseManagement, Telemetry, "Читает данные из необходимых контроллеров датчиков", "HTTPS/REST")
+    
+    Rel(HeatingManagement, DeviceController, "Отправляет команды на устройства", "HTTPS/REST")
+    Rel(LightManagement, DeviceController, "Отправляет команды на устройства", "HTTPS/REST")
+    Rel(DoorManagement, DeviceController, "Отправляет команды на устройства", "HTTPS/REST")
+    Rel(WebCamManagement, DeviceController, "Отправляет команды на устройства", "HTTPS/REST")
+
+    Rel(BackendBalancer, DeviceManagement, "Маршрутизация трафика, балансировка")
+    Rel(BackendBalancer, UseCaseManagement, "Маршрутизация трафика, балансировка")
+    Rel(BackendBalancer, Telemetry, "Маршрутизация трафика, балансировка")
+}
+
+@enduml

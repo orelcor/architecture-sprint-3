@@ -1,0 +1,33 @@
+@startuml domain
+title DDD Analysis
+
+!include C4_Templates/C4_Component.puml
+
+Boundary(SmartHomeEcosystem, "Экосистема умных домов", "Enterprise") {
+    Boundary(DeviceOnboarding, "Подключение устройства", "Domain") {
+        System(NetworkConnection, "Подключение к интернету", "Subdomain")
+        System(DeviceDiscovery, "Обнаружение устройства", "Subdomain")
+    }
+
+    Boundary(DeviceManagement, "Управление устройствами", "Domain") {
+        System(LightManagement, "Управленим светом", "Subdomain")
+        System(HeatingManagement, "Управление отоплением", "Subdomain")
+        System(WebCamManagement, "Управление камерами наблюдения", "Subdomain")
+        System(DoorManagement, "Управленим воротами", "Subdomain")
+    }
+
+    Boundary(Telemetry, "Телеметрия/Мониторинг", "Domain") {
+        System(DynamicMeasuring, "Динамические измерения", "Subdomain")
+        System(StaticMeasuring, "Статические измерения", "Subdomain")
+        System(ErrorDetection, "Выявление коллизий и сбоев оборудования")
+    }
+
+    Boundary(UseCaseManagement, "Управление сценариями", "Domain") {
+        System(OrchestratorComplex, "Управление сквозными сценариями", "Subdomain")
+        System(OrchestratorSimple, "Управление сценариями одного устройства", "Subdomain")
+        System(ScheduleManagement, "Управление расписанием", "Subdomain")
+    }
+}
+
+@enduml
+

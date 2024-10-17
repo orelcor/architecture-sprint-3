@@ -1,0 +1,25 @@
+@startuml test
+title Диаграмма контекста ASIS
+
+!include C4_Templates/C4_Container.puml
+
+Person(HouseOwner, "Владелец дома")
+Person(TechSpecialist, "Специалист по установке")
+
+System_Boundary(c1, "Управление отоплением") {
+    Container(WebApp, "Веб-приложение", "Java", "Просмотр текущей температуры и установка целевой")
+    ContainerDb(AppDatabase, "БД приложения", "PostgreSQL", "Хранит текущие значения температуры и историю")
+    Rel(WebApp, AppDatabase, "Читает/пишет значения температуры", "SQL")
+}
+
+System(SmartHeatingEngine, "Умная батарея")
+System(TemperatureEngine, "Измерение температуры")
+
+
+Rel(HouseOwner, WebApp, "Заходит на сайт", "WEB")
+Rel(WebApp, SmartHeatingEngine, "Устаналивает значение температуры", "HTTP")
+Rel(WebApp, TemperatureEngine, "Читает текущую температуру", "HTTP")
+Rel(TechSpecialist, SmartHeatingEngine, "Настраивает", "HTTP, LAN")
+Rel(TechSpecialist, TemperatureEngine, "Настраивает", "HTTP, LAN")
+
+@enduml

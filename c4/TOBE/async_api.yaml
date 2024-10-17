@@ -1,0 +1,55 @@
+asyncapi: 3.0.0
+info:
+  title: Sensor Data API
+  version: 1.0.0
+  description: API для получения данных от датчиков в реальном времени
+channels:
+  sensorData:
+    address: sensorData
+    messages:
+      receiveSensorData.message:
+        contentType: application/json
+        payload:
+          type: object
+          properties:
+            sensorId:
+              type: string
+              description: Уникальный идентификатор сенсора
+              example: sensor-001
+            value:
+              type: number
+              description: Значение показателя
+              example: 22.5
+            timestamp:
+              type: string
+              format: date-time
+              description: Время отправки данных
+              example: '2023-10-01T12:00:00Z'
+    description: Канал для получения данных от сенсоров
+ 
+operations:
+  receiveSensorData:
+    action: send
+    channel:
+      $ref: '#/channels/sensorData'
+    summary: Подписка на данные сенсора
+    messages:
+      - $ref: '#/channels/sensorData/messages/receiveSensorData.message'
+
+components:
+  messages:
+    SensorDataMessage:
+      contentType: application/json
+      payload:
+        type: object
+        properties:
+          sensorId:
+            type: string
+            example: sensor-001
+          value:
+            type: number
+            example: 22.5
+          timestamp:
+            type: string
+            format: date-time
+            example: '2024-11-17T12:00:00Z'

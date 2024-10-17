@@ -1,0 +1,92 @@
+@startuml ER
+title "ER diagram TOBE 1Y"
+
+entity User {
+    user_id: UUID <<generated>>
+    --
+    name: TEXT
+    surname: TEXT
+    mobile_number: LONG
+}
+
+entity House {
+    house_id: UUID <<generated>>
+    --
+    region: TEXT
+    address: TEXT
+}
+
+entity Room {
+    room_id: UUID <<generated>>
+    house_id: UUID <<FK>>
+    --
+    name: TEXT
+    description: TEXT
+}
+
+entity Device {
+    device_id: UUID <<generated>>
+    device_type_id: INT <<FK>>
+    room_id: UUID <<FK>>
+    --
+    manufacturer: TEXT
+    model: TEXT
+}
+
+entity DeviceType {
+    device_type_id: INT <<generated>>
+    ---
+    name: TEXT
+    description: TEXT
+}
+
+entity Sensor {
+    sensor_id: UUID <<generated>>
+    sensor_type_id: INT <<FK>>
+    device_id: UUID <<FK>>
+    --
+    manufacturer: TEXT
+    model: TEXT
+}
+
+entity SensorType {
+    sensor_type_id: INT <<generated>>
+    --
+    name: TEXT
+    description: TEXT
+}
+
+entity Metric {
+    metric_id: UUID <<generated>>
+    sensor_id: INT <<FK>>
+    --
+    name: TEXT
+    value: TEXT
+    description: TEXT
+}
+
+entity Command {
+    command_id: UUID <<generated>>
+    --
+    name: TEXT
+    value: TEXT
+    description: TEXT
+}
+
+entity _UseCase as "UseCase" {
+    use_case_id: UUID <<generated>>
+    --
+}
+
+User }--{ House
+Device }-- DeviceType
+Sensor }-- SensorType
+House --{ Room
+Room --{ Device
+Device --{ Sensor
+Device }--{ Command
+Sensor --{ Metric
+_UseCase }--{ Command
+_UseCase }--{ Metric
+
+@enduml
