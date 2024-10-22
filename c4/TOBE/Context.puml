@@ -1,0 +1,27 @@
+@startuml context
+title Диаграмма контекста TOBE 1Y
+
+!include C4_Templates/C4_Context.puml
+
+Person(HouseOwner, "Владелец дома")
+Person(Support, "Техническая поддержка")
+
+System_Ext(WebApp, "Web/Mobile App", "Входная точка управления умного дома")
+System_Ext(SmartDeviceOrSensor, "Умное устройство/сенсор", "Пример связки: батарея и термометр")
+
+System(TechSupportSystem, "Обработка инцидентов", "Ошибки оборудования, ПО, консультации по самостоятельному подключению")
+System(CommunicationSystem, "Отправка оповещений", "Единая точка для обработки очереди на коммуникацию с пользователем")
+
+System(RemoteBackendCore, "Smart Home Core", "Управление устройствами, сценариями и телеметрия")
+System(DeviceHub, "Device Hub", "Локальное управление устройствами и датчикам, входная точка для backed-сервиса")
+
+Rel(WebApp, TechSupportSystem, "Заводит инцидент")
+Rel(Support, TechSupportSystem, "Обрабатывает инцидент")
+Rel(HouseOwner, WebApp, "Заходит на сайт/в приложение")
+
+Rel(WebApp, RemoteBackendCore, "Устанавливает целевые значения, читает агрегированные данные датчиков")
+Rel(RemoteBackendCore, DeviceHub, "Отправляет управляющие сигналы на локальный оркестратор, читает метрики с него")
+Rel(DeviceHub, SmartDeviceOrSensor, "Низкоуровневые команды для устройства/его датчика")
+
+Rel(RemoteBackendCore, CommunicationSystem, "Отправляет коммуникацию по данным телеметрии/сбоям")
+Rel(TechSupportSystem, CommunicationSystem, "Отправляет коммуникацию по статусам инцидентов")
