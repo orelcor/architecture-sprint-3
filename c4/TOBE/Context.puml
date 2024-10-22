@@ -6,48 +6,22 @@ title Диаграмма контекста TOBE 1Y
 Person(HouseOwner, "Владелец дома")
 Person(Support, "Техническая поддержка")
 
-System(WebApp, "Web/Mobile App", "Входная точка управления умного дома")
+System_Ext(WebApp, "Web/Mobile App", "Входная точка управления умного дома")
+System_Ext(SmartDeviceOrSensor, "Умное устройство/сенсор", "Пример связки: батарея и термометр")
+
 System(TechSupportSystem, "Обработка инцидентов", "Ошибки оборудования, ПО, консультации по самостоятельному подключению")
 System(CommunicationSystem, "Отправка оповещений", "Единая точка для обработки очереди на коммуникацию с пользователем")
 
-Boundary(EcosystemRemoteBackend, "Smart Home Core") {
-    System(DeviceManagement, "Управленим устройствами", "Формирует команды для устройств со стороны удаленного сервера")
-    System(UseCaseManagement, "Управленим сценариями", "Формирует команды для сценария, проверяет факт выполнения, управляет расписанием")
-    System(Telemetry, "Телеметрия/Мониторинг", "Собирает значения с датчиков и группирует")
-}
+System(RemoteBackendCore, "Smart Home Core", "Управление устройствами, сценариями и телеметрия")
+System(DeviceHub, "Device Hub", "Локальное управление устройствами и датчикам, входная точка для backed-сервиса")
 
-Boundary(LocalNetwork, "Локальная сеть/умный дом") {
-    System_Ext(SmartDevice, "Умное устройство X", "Батарея, лампочка, камера, замок, вал, etc.")
-    System_Ext(SmartMeasure, "Умный датчик X", "Датчик температуры, света, движения, закрытия дверей, etc. ")
-    System(SmartHub, "Device Hub", "Управляет устройствами и собирает метрики в локальной сети умного дома")
-    System(DeviceDiscovery, "Обнаружение устройств", "Автоматически обнаруживает устройство/датчик при подключении WiFi")
-}
+Rel(WebApp, TechSupportSystem, "Заводит инцидент")
+Rel(Support, TechSupportSystem, "Обрабатывает инцидент")
+Rel(HouseOwner, WebApp, "Заходит на сайт/в приложение")
 
-Rel(WebApp, TechSupportSystem, "Заводит инцидент", "REST/HTTPS")
-Rel(Support, TechSupportSystem, "Обрабатывает инцидент", "REST/HTTPS")
+Rel(WebApp, RemoteBackendCore, "Устанавливает целевые значения, читает агрегированные данные датчиков")
+Rel(RemoteBackendCore, DeviceHub, "Отправляет управляющие сигналы на локальный оркестратор, читает метрики с него")
+Rel(DeviceHub, SmartDeviceOrSensor, "Низкоуровневые команды для устройства/его датчика")
 
-Rel(HouseOwner, WebApp, "Заходит на сайт/в приложение", "REST/HTTPS")
-Rel(WebApp, DeviceManagement, "Отправляет сигнал для устройства")
-Rel(WebApp, Telemetry, "Получает агрегат по значениям датчиков", "REST/HTTPS")
-Rel(WebApp, UseCaseManagement, "Настраивает сценарий", "REST/HTTPS")
-
-Rel(UseCaseManagement, DeviceManagement, "Отправляет последовательность команд для выпонения сценария", "REST/HTTPS")
-Rel(UseCaseManagement, Telemetry, "Получает агрегаты по датчикам", "REST/HTTPS")
-
-Rel(DeviceDiscovery, SmartDevice, "Обнаруживает устройство", "ZigBee")
-Rel(DeviceDiscovery, SmartMeasure, "Обнаруживает датчик", "ZigBee")
-
-Rel(DeviceManagement, SmartHub, "Отправляет управляющий сигнал", "REST/HTTPS")
-Rel(SmartHub, SmartDevice, "Отправляет управляющий сигнал", "REST/HTTPS")
-Rel(SmartMeasure, SmartHub, "Отправляет данные измерений", "ZigBee")
-Rel(SmartHub, Telemetry, "Отправляет данные измерений", "TCP/KAFKA")
-
-Rel(DeviceDiscovery, DeviceManagement, "Событие о новом устройстве", "TCP/KAFKA")
-Rel(DeviceDiscovery, Telemetry, "Событие о новом датчике", "TCP/KAFKA")
-
-Rel(SmartDevice, SmartMeasure, "Получает актуальные данные об измерениях", "ZigBee")
-Rel(Telemetry, CommunicationSystem, "Отправляет события о сбоях в очередь на коммуникацию", "TCP/KAFKA")
-Rel(TechSupportSystem, CommunicationSystem, "Отправляет статусы инцидентов", "TCP/KAFKA")
-Rel(CommunicationSystem, HouseOwner, "Оповещает", "PUSH, SMS, CALL")
-
-@enduml
+Rel(RemoteBackendCore, CommunicationSystem, "Отправляет коммуникацию по данным телеметрии/сбоям")
+Rel(TechSupportSystem, CommunicationSystem, "Отправляет коммуникацию по статусам инцидентов")

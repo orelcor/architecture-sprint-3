@@ -2,12 +2,13 @@ openapi: 3.0.0
 info:
   title: Device Management API
   version: 1.0.0
-  description: API для управления устройствами и командами
+  description: API для управления устройствами, датчиками и командами
 
 paths:
   /devices:
     get:
       summary: Получить список устройств
+      tags: ["devices"]
       responses:
         '200':
           description: Успешно получен список устройств
@@ -17,6 +18,23 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Device'
+    post:
+      summary: Добавить новое устройство
+      tags: ["devices"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Device'
+      responses:
+        '200':
+          description: Новое устройство создано
+          content:
+            application/json:
+              schema:
+                type: object
+                example: {"deviceId": "550e8400-e29b-41d4-a716-446655440000"}
 
   /devices/{deviceId}:
     parameters:
@@ -29,6 +47,7 @@ paths:
 
     get:
       summary: Получить информацию об устройстве
+      tags: ["devices"]
       responses:
         '200':
           description: Информация об устройстве
@@ -36,10 +55,123 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Device'
+    delete:
+      summary: Удалить устройство
+      tags: ["devices"]
+      responses:
+        '200':
+          description: Устройство удалено
+          content:
+            application/json:
+              schema:
+                type: object
+                example: {"deleted": "550e8400-e29b-41d4-a716-446655440000"}
 
-  /devices/{deviceId}/commands:
+  /sensors:
+    get:
+      summary: Получить список датчиков
+      tags: ["sensors"]
+      responses:
+        '200':
+          description: Успешно получен список датчиков
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Sensor'
+    post:
+      summary: Добавить новый датчик
+      tags: ["sensors"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Sensor'
+      responses:
+        '200':
+          description: Новый дачтик создан
+          content:
+            application/json:
+              schema:
+                type: object
+                example: {"sensorId": "550e8400-e29b-41d4-a716-446655440000"}
+
+  /sensors/{sensorId}:
+    parameters:
+      - name: sensorId
+        in: path
+        required: true
+        description: ID датчика
+        schema:
+          type: string
+
+    get:
+      summary: Получить информацию о датчике
+      tags: ["sensors"]
+      responses:
+        '200':
+          description: Информация о датчике
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Sensor'
+    delete:
+      summary: Удалить датчик
+      tags: ["sensors"]
+      responses:
+        '200':
+          description: Датчик удален
+          content:
+            application/json:
+              schema:
+                type: object
+                example: {"deleted": "550e8400-e29b-41d4-a716-446655440000"}
+
+  /commands:
+    get:
+      summary: Получить список команд
+      tags: ["command"]
+      responses:
+        '200':
+          description: Успешно получен список команд
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Command'
+    post:
+      summary: Добавить новую команду
+      tags: ["command"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Command'
+      responses:
+        '200':
+          description: Новое устройство создано
+          content:
+            application/json:
+              schema:
+                type: object
+                example: {"commandId": "550e8400-e29b-41d4-a716-446655440000"}
+
+  /commands/{deviceId}:
+    parameters:
+      - name: deviceId
+        in: path
+        required: true
+        description: ID устройства
+        schema:
+          type: string
+
     post:
       summary: Отправить команду устройству
+      tags: ["command"]
       requestBody:
         required: true
         content:
@@ -52,19 +184,46 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Command'
+                type: object
+                example: {"commandRunId": "550e8400-e29b-41d4-a716-446655440000"}
+
+  /commands/status/{commandRunId}:
+    parameters:
+      - name: commandRunId
+        in: path
+        required: true
+        description: Уникальный выполнения ID команды
+        schema:
+          type: string
+
+    get:
+      summary: Получить статус выполнения команды
+      tags: ["command"]
+      responses:
+        '200':
+          description: Статусы выполнения команды
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandStatus'
 
 components:
   schemas:
     Device:
       type: object
       properties:
-        id:
+        deviceId:
           type: string
-          example: "some device"
+          example: "550e8400-e29b-41d4-a716-446655440000"
         name:
           type: string
           example: "Умная лампа"
+        manufacturer:
+          type: string
+          example: "Hiper"
+        model:
+          type: string
+          example: "DL-221"
         status:
           type: string
           enum: [online, offline]
@@ -73,17 +232,47 @@ components:
           type: string
           example: "light"
 
+    Sensor:
+      type: object
+      properties:
+        sensorId:
+          type: string
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        name:
+          type: string
+          example: "Датчик температуры"
+        manufacturer:
+          type: string
+          example: "Dell"
+        model:
+          type: string
+          example: "T-201"
+        status:
+          type: string
+          enum: [online, offline]
+          example: "online"
+        type:
+          type: string
+          example: "temperature"
+
     Command:
       type: object
       properties:
         commandId:
           type: string
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        commandDesc:
+          type: string
           example: "some command"
         action:
           type: string
-          enum: [turn_on, turn_off, set_brightness]
+          enum: [turn_on, turn_off, set_brightness, open, close]
           example: "turn_on"
-        parameters:
-          type: object
-          additionalProperties:
-            type: string
+
+    CommandStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [running, finished, not started]
+          example: "running"
